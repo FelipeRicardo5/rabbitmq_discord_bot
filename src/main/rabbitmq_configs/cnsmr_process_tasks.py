@@ -8,13 +8,18 @@ Módulo responsável por ser o ator Consumer,
 consome qualquer TASK simula o processamento e cria uma notificação.
 """
 # recebe o corpo vindo do publisher e processa.
-def rabbitmq_callback(ch, method, properties, body):
+def process_task_callback(ch, method, properties, body):
 
-    msg = body.decode("utf-8")
-    formatted = json.loads(msg)
+    task = body.decode("utf-8")
+    task_formatted = json.loads(task)
+
+    notification = {
+        "text": f"Tarefa concluída: {task_formatted['data']}",
+        "type": task_formatted["type"]
+    }
     print("recebendo mensagem...")
     time.sleep(1)
-    print(formatted) # mensagem já convertida a objeto python
+    print(notification) # mensagem já convertida a objeto python
 
     
 class RabbitMQConsumer:
@@ -25,7 +30,7 @@ class RabbitMQConsumer:
         self.__password = "guest"
         self.__queue = "task"
         self.__exchange = "tasks"
-        self.__routing_key = "task.*"
+        self.__routing_key = "task.*" # generaliza para qualquer tipo de task 
         self.__channel = self.create_channel()
 
     def create_channel(self): 
@@ -52,7 +57,7 @@ class RabbitMQConsumer:
 
         channel.basic_consume(
             queue=self.__queue,
-            on_message_callback=rabbitmq_callback,
+            on_message_callback=process_task_callback,
             auto_ack=True,
         )
 
