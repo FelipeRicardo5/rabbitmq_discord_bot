@@ -1,12 +1,21 @@
 import pika
 import json
+import time
+import os
 
+"""
+Módulo responsável por ser o ator Consumer,
+consome qualquer TASK simula o processamento e cria uma notificação.
+"""
+# recebe o corpo vindo do publisher e processa.
 def rabbitmq_callback(ch, method, properties, body):
+
     msg = body.decode("utf-8")
     formatted = json.loads(msg)
-    print(formatted)
-    print(type(formatted))
-    print(formatted["msg"])
+    print("recebendo mensagem...")
+    time.sleep(1)
+    print(formatted) # mensagem já convertida a objeto python
+
     
 class RabbitMQConsumer:
     def __init__(self): 
@@ -14,12 +23,13 @@ class RabbitMQConsumer:
         self.__port = "5672"
         self.__username = "guest"
         self.__password = "guest"
-        self.__queue = "minhaqueue"
-        self.__routing_key = "meu.rk"
+        self.__queue = "task"
+        self.__exchange = "tasks"
+        self.__routing_key = "task.*"
         self.__channel = self.create_channel()
 
     def create_channel(self): 
-        # enviando os parametros de conexão.
+        # armazeno e defino os parametros de conexão.
         connection_parameters = pika.ConnectionParameters(
             host=self.__host,
             port=self.__port,
@@ -28,18 +38,22 @@ class RabbitMQConsumer:
                 password=self.__password
             )
         )
+        # obj de conexáo.
+        conn = pika.BlockingConnection(connection_parameters)
 
-        channel = pika.BlockingConnection(connection_parameters).channel() 
-        # instancia do objeto de conexão.
+        channel = conn.channel()
 
         channel.queue_declare(
             queue=self.__queue,
             durable=True
         )
+        # reforça a bind entre a exchange e a queue
+        channel.queue_bind(queue=self.__queue, exchange=self.__exchange, routing_key=self.__routing_key)
+
         channel.basic_consume(
-            auto_ack=True,
             queue=self.__queue,
-            on_message_callback=rabbitmq_callback
+            on_message_callback=rabbitmq_callback,
+            auto_ack=True,
         )
 
         return channel
