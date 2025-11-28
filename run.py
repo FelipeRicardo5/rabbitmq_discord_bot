@@ -1,4 +1,4 @@
-from src.main.rabbitmq_configs.cnsmr_process_tasks import RabbitMQConsumer
+from src.main.consumers.consumer_process_tasks.cnsmr_process_tasks import RabbitMQConsumer
 
 """
 Módulo responsável por rodar o conumer.
